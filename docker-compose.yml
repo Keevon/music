@@ -1,15 +1,44 @@
 # docker-compose.yml
-version: "3"
+version: "3.6"
 services:
-  app:
-    build: .
+  api:
+    build: ./api
     depends_on:
       - postgres
+    volumes:
+      - ./api:/api
+      - ./music:/music
+      - ./preview:/preview
+      - npmcache:/root/.npm
+    ports:
+      - "3001:3001"
+      - "9229:9229"
+    networks:
+      - front-tier
+      - back-tier
+
+  client:
+    build: ./client
+    volumes:
+      - ./client:/client
+      - npmcache:/root/.npm
     ports:
       - "3000:3000"
-      - "9229:9229"
+    networks:
+      - front-tier
 
   postgres:
     image: postgres:11.2-alpine
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - back-tier
     environment:
       POSTGRES_PASSWORD: postgres
+
+volumes:
+  dbdata:
+  npmcache:
+networks:
+  front-tier:
+  back-tier:
