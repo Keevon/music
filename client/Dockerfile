@@ -3,4 +3,6 @@ EXPOSE 3000
 
 COPY ./entrypoint.sh entrypoint.sh
 
+RUN npm i -g react-scripts
+
 ENTRYPOINT sh ./entrypoint.sh

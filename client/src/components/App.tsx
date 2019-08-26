@@ -1,11 +1,11 @@
-import React from 'react';
-import { BrowserRouter as Router, Link, Route } from 'react-router-dom';
-import styled from 'styled-components';
+import React from "react";
+import { BrowserRouter as Router, Link, Route } from "react-router-dom";
+import styled from "styled-components";
 
-import routes from '../routes';
+import routes from "../routes";
 
-import MusicList from './MusicList';
-import MusicView from './MusicView';
+import MusicList from "./MusicList";
+import MusicView from "./MusicView";
 
 const StyledApp = styled.div`
   text-align: center;
@@ -34,9 +34,7 @@ const App: React.StatelessComponent = () => (
   <StyledApp>
     <Router>
       <Header>
-        <Link to={routes.list.path}>
-          Video Game Sheet Music Club
-        </Link>
+        <Link to={routes.list.path}>Video Game Sheet Music Club</Link>
       </Header>
       <Route path={routes.list.path} exact component={MusicList} />
       <Route path={routes.music.path} component={MusicView} />

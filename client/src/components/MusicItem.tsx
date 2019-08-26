@@ -1,13 +1,13 @@
-import React from 'react';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
-import styled from 'styled-components';
+import React from "react";
+import { withRouter, RouteComponentProps } from "react-router-dom";
+import styled from "styled-components";
 
-import routes from '../routes';
+import routes from "../routes";
 
-import { url } from '../api';
-import { Music } from '../types';
+import { url } from "../api";
+import { Music } from "../types";
 
-import Item from './Item';
+import Item from "./Item";
 
 interface Props extends RouteComponentProps {
   music: Music;
@@ -26,7 +26,7 @@ class MusicItem extends React.PureComponent<Props> {
 
     return (
       <Item onClick={this.handleClick}>
-        <Title>{music.name}</Title>
+        <Title>{music.title || music.name}</Title>
         <Preview src={url(`preview/${music.id}`)} alt="Music" />
       </Item>
     );
@@ -36,7 +36,7 @@ class MusicItem extends React.PureComponent<Props> {
     const { history, music } = this.props;
 
     history.push(routes.music.toPath({ id: music.id }));
-  }
+  };
 }
 
 export default withRouter(MusicItem);
