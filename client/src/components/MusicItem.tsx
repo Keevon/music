@@ -2,9 +2,8 @@ import React from "react";
 import { withRouter, RouteComponentProps } from "react-router-dom";
 import styled from "styled-components";
 
-import routes from "../routes";
-
 import { url } from "../api";
+import routes from "../routes";
 import { Music } from "../types";
 
 import Item from "./Item";

@@ -2,9 +2,11 @@ import { PDFDocumentProxy } from "pdfjs-dist";
 import React from "react";
 import { Document, Page } from "react-pdf";
 import { withRouter, RouteComponentProps } from "react-router-dom";
+import { Button } from "reactstrap";
 import styled from "styled-components";
 
-import { get, url } from "../api";
+import { del, get, url } from "../api";
+import routes from "../routes";
 import { Music } from "../types";
 
 interface MatchParams {
@@ -23,7 +25,7 @@ interface State {
 }
 
 const StyledMusicView = styled.div`
-  margin: 0 auto;
+  margin: 24px auto;
   max-width: 1200px;
 `;
 
@@ -50,6 +52,10 @@ const PageInfo = styled.div`
   text-align: center;
 `;
 
+const DeleteButton = styled(Button)`
+  text-align: center;
+`;
+
 class MusicView extends React.PureComponent<
   RouteComponentProps<MatchParams>,
   State
@@ -73,6 +79,13 @@ class MusicView extends React.PureComponent<
 
     return (
       <StyledMusicView>
+        <PageInfo>{music.title}</PageInfo>
+        <PageInfo>{music.track}</PageInfo>
+        <PageInfo>{music.composer}</PageInfo>
+        <PageInfo>{music.arranger}</PageInfo>
+        <PageInfo>{music.album}</PageInfo>
+        <PageInfo>{music.game}</PageInfo>
+        <PageInfo>{music.genre}</PageInfo>
         <MusicPager>
           <Pager disabled={pageNumber <= 1} onClick={this.prev}>
             &lt;
@@ -87,11 +100,9 @@ class MusicView extends React.PureComponent<
         <PageInfo>
           Page {pageNumber} of {numPages}
         </PageInfo>
-        <PageInfo>{music.title}</PageInfo>
-        <PageInfo>{music.composer}</PageInfo>
-        <PageInfo>{music.arranger}</PageInfo>
-        <PageInfo>{music.album}</PageInfo>
-        <PageInfo>{music.game}</PageInfo>
+        <DeleteButton color="danger" onClick={this.delete}>
+          Delete Music
+        </DeleteButton>
       </StyledMusicView>
     );
   }
@@ -112,6 +123,22 @@ class MusicView extends React.PureComponent<
 
     const res = await get(`get/${id}`);
     this.setState({ music: res.data });
+  };
+
+  delete = async () => {
+    const { history } = this.props;
+    const { id } = this.props.match.params;
+
+    if (!window.confirm("Do you really want to delete this music?")) {
+      return;
+    }
+
+    try {
+      const res = await del(`delete/${id}`);
+      history.push(routes.list.path);
+    } catch (e) {
+      console.error(e);
+    }
   };
 }
 

@@ -3,7 +3,9 @@ export interface Music {
   arranger: string;
   composer: string;
   game: string;
+  genre: string;
   id: number;
   name: string;
   title: string;
+  track: number;
 }

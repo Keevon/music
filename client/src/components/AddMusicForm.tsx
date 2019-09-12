@@ -1,10 +1,12 @@
 import React from "react";
 import { Document, Page } from "react-pdf";
+import AsyncCreatableSelect from "react-select/async-creatable";
 import { Button, Form, FormGroup, Input, Label } from "reactstrap";
 import styled from "styled-components";
 
-import { post } from "../api";
+import { get, post } from "../api";
 import { Music } from "../types";
+import { ValueType } from "react-select/src/types";
 
 interface Props {
   addMusic(music: Music): void;
@@ -12,6 +14,8 @@ interface Props {
 
 interface State extends Fields<string> {
   pdfFile: File | null;
+  searching: Fields<boolean>;
+  submitting: boolean;
 }
 
 interface Fields<T> {
@@ -19,7 +23,9 @@ interface Fields<T> {
   arranger: T;
   composer: T;
   game: T;
+  genre: T;
   title: T;
+  track: T;
 }
 type Field = keyof Fields<void>;
 
@@ -27,7 +33,7 @@ const StyledForm = styled(Form)`
   display: flex;
 `;
 
-const PdfButton = styled(Button)`
+const FormButton = styled(Button)`
   margin-right: 16px;
 `;
 
@@ -42,37 +48,67 @@ const RightSide = styled.div`
   width: 300px;
 `;
 
+const defaultState: State = {
+  album: "",
+  arranger: "",
+  composer: "",
+  game: "",
+  genre: "",
+  pdfFile: null,
+  searching: {
+    album: false,
+    arranger: false,
+    composer: false,
+    game: false,
+    genre: false,
+    title: false,
+    track: false
+  },
+  submitting: false,
+  title: "",
+  track: ""
+};
+
 class AddItemForm extends React.PureComponent<Props, State> {
   fileInput: React.RefObject<HTMLInputElement> = React.createRef();
-  state: State = {
-    album: "",
-    arranger: "",
-    composer: "",
-    game: "",
-    pdfFile: null,
-    title: ""
-  };
+  state: State = defaultState;
 
   handleChange = (field: Field) => (e: React.ChangeEvent<HTMLInputElement>) =>
     this.setState({ ...this.state, [field]: e.target.value });
 
+  handleSelectChange = (field: Field) => (value: ValueType<string>) =>
+    this.setState({ ...this.state, [field]: value });
+
   render() {
-    const { pdfFile } = this.state;
+    const { pdfFile, submitting } = this.state;
 
     return (
       <StyledForm onSubmit={this.uploadMusic}>
         <LeftSide>
           {this.renderTextInput("title", "Title")}
-          {this.renderTextInput("composer", "Composer")}
-          {this.renderTextInput("arranger", "Arranger")}
-          {this.renderTextInput("album", "Album")}
-          {this.renderTextInput("game", "Game")}
-          <PdfButton color="info" onClick={this.addMusic}>
+          {this.renderAsyncInput("album", "Album")}
+          {this.renderAsyncInput("game", "Game")}
+          {this.renderTextInput("track", "Track #")}
+          {this.renderAsyncInput("genre", "Genre")}
+          {this.renderAsyncInput("composer", "Composer")}
+          {this.renderAsyncInput("arranger", "Arranger")}
+          <FormButton
+            color="info"
+            disabled={submitting}
+            onClick={this.addMusic}
+          >
             Choose PDF
-          </PdfButton>
-          <Button color="primary" type="submit">
+          </FormButton>
+          <FormButton
+            color="secondary"
+            disabled={submitting}
+            onClick={this.clear}
+          >
+            Clear
+          </FormButton>
+          <FormButton color="primary" disabled={submitting} type="submit">
             Add Music
-          </Button>
+          </FormButton>
         </LeftSide>
         <RightSide>
           <Document file={pdfFile}>
@@ -106,6 +142,37 @@ class AddItemForm extends React.PureComponent<Props, State> {
     );
   }
 
+  renderAsyncInput(field: Field, title: string) {
+    const { searching } = this.state;
+    return (
+      <FormGroup>
+        <Label for={field}>{title}</Label>
+        <AsyncCreatableSelect
+          cacheOptions
+          defaultOptions
+          id={field}
+          isLoading={searching[field]}
+          isSearchable
+          loadOptions={this.loadOptions(field)}
+          name={field}
+          onChange={this.handleSelectChange(field)}
+          placeholder={title}
+          type="text"
+          value={this.state[field]}
+        />
+      </FormGroup>
+    );
+  }
+
+  loadOptions = (field: Field) => async (value: string): Promise<string[]> => {
+    this.setState({ searching: { ...this.state.searching, [field]: true } });
+    const res = await get(`query/${field}/${value.toLowerCase()}`);
+    this.setState({ searching: { ...this.state.searching, [field]: false } });
+    return res.data.rows;
+  };
+
+  clear = () => this.setState(defaultState);
+
   addMusic = () => this.fileInput.current && this.fileInput.current.click();
 
   fileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,8 +185,19 @@ class AddItemForm extends React.PureComponent<Props, State> {
   uploadMusic = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    this.setState({ submitting: true });
+
     const { addMusic } = this.props;
-    const { album, arranger, composer, game, pdfFile, title } = this.state;
+    const {
+      album,
+      arranger,
+      composer,
+      game,
+      genre,
+      pdfFile,
+      title,
+      track
+    } = this.state;
 
     if (pdfFile) {
       let data = new FormData();
@@ -128,12 +206,21 @@ class AddItemForm extends React.PureComponent<Props, State> {
       data.append("arranger", arranger);
       data.append("composer", composer);
       data.append("game", game);
+      data.append("genre", genre);
       data.append("title", title);
+      data.append("track", track);
       try {
         const res = await post("upload", data);
         addMusic(res.data.row);
       } catch (e) {
         console.error(e);
+      } finally {
+        this.setState({
+          pdfFile: null,
+          submitting: false,
+          title: "",
+          track: ""
+        });
       }
     }
   };
