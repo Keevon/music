@@ -9,3 +9,8 @@ export interface Music {
   title: string;
   track: number;
 }
+
+export interface Option<T> {
+  label: T;
+  value: T;
+}

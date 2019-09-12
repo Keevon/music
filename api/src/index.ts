@@ -64,12 +64,21 @@ app.get("/api/get/:id", async (req, res) => {
   res.send(result.rows[0]);
 });
 
-app.get("/api/query/:column/:value", async (req, res) => {
-  const result = await client.query(
-    `SELECT * FROM music WHERE $1 LIKE $2 LIMIT 10`,
-    [req.params.column, "%" + req.params.value + "%"]
-  );
-  res.send(result.rows); //.map(row => row[req.params.column]));
+['composer', 'arranger', 'genre', 'album', 'game'].forEach(column => {
+  app.get(`/api/query/${column}/`, async (req, res) => {
+    const result = await client.query(
+      `SELECT DISTINCT ${column} FROM music ORDER BY ${column} ASC LIMIT 10`
+    );
+    res.send(result.rows);
+  });
+
+  app.get(`/api/query/${column}/:value`, async (req, res) => {
+    const result = await client.query(
+      `SELECT DISTINCT ${column} FROM music WHERE ${column} ILIKE $1 ORDER BY ${column} ASC LIMIT 10`,
+      ['%' + req.params.value + '%']
+    );
+    res.send(result.rows);
+  });
 });
 
 app.get("/api/music/:id", async (req, res) => {

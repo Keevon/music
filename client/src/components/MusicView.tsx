@@ -134,7 +134,7 @@ class MusicView extends React.PureComponent<
     }
 
     try {
-      const res = await del(`delete/${id}`);
+      await del(`delete/${id}`);
       history.push(routes.list.path);
     } catch (e) {
       console.error(e);

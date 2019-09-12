@@ -5,14 +5,14 @@ import { Button, Form, FormGroup, Input, Label } from "reactstrap";
 import styled from "styled-components";
 
 import { get, post } from "../api";
-import { Music } from "../types";
-import { ValueType } from "react-select/src/types";
+import { Music, Option } from "../types";
 
 interface Props {
   addMusic(music: Music): void;
 }
 
 interface State extends Fields<string> {
+  cache: boolean;
   pdfFile: File | null;
   searching: Fields<boolean>;
   submitting: boolean;
@@ -51,6 +51,7 @@ const RightSide = styled.div`
 const defaultState: State = {
   album: "",
   arranger: "",
+  cache: true,
   composer: "",
   game: "",
   genre: "",
@@ -62,11 +63,11 @@ const defaultState: State = {
     game: false,
     genre: false,
     title: false,
-    track: false
+    track: false,
   },
   submitting: false,
   title: "",
-  track: ""
+  track: "",
 };
 
 class AddItemForm extends React.PureComponent<Props, State> {
@@ -76,8 +77,8 @@ class AddItemForm extends React.PureComponent<Props, State> {
   handleChange = (field: Field) => (e: React.ChangeEvent<HTMLInputElement>) =>
     this.setState({ ...this.state, [field]: e.target.value });
 
-  handleSelectChange = (field: Field) => (value: ValueType<string>) =>
-    this.setState({ ...this.state, [field]: value });
+  handleSelectChange = (field: Field) => (option: any) =>
+    this.setState({ ...this.state, [field]: option.value });
 
   render() {
     const { pdfFile, submitting } = this.state;
@@ -143,12 +144,12 @@ class AddItemForm extends React.PureComponent<Props, State> {
   }
 
   renderAsyncInput(field: Field, title: string) {
-    const { searching } = this.state;
+    const { cache, searching } = this.state;
     return (
       <FormGroup>
         <Label for={field}>{title}</Label>
         <AsyncCreatableSelect
-          cacheOptions
+          cacheOptions={cache}
           defaultOptions
           id={field}
           isLoading={searching[field]}
@@ -158,17 +159,19 @@ class AddItemForm extends React.PureComponent<Props, State> {
           onChange={this.handleSelectChange(field)}
           placeholder={title}
           type="text"
-          value={this.state[field]}
+          value={this.state[field] && this.createOption(this.state[field])}
         />
       </FormGroup>
     );
   }
 
-  loadOptions = (field: Field) => async (value: string): Promise<string[]> => {
-    this.setState({ searching: { ...this.state.searching, [field]: true } });
+  createOption = (value: string): Option<string> => ({ label: value, value });
+
+  loadOptions = (field: Field) => async (value: string): Promise<Option<string>[]> => {
+    this.setState({ cache: true, searching: { ...this.state.searching, [field]: true } });
     const res = await get(`query/${field}/${value.toLowerCase()}`);
     this.setState({ searching: { ...this.state.searching, [field]: false } });
-    return res.data.rows;
+    return res.data.map((row: {[index in Field]: string}) => this.createOption(row[field]));
   };
 
   clear = () => this.setState(defaultState);
@@ -185,7 +188,7 @@ class AddItemForm extends React.PureComponent<Props, State> {
   uploadMusic = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    this.setState({ submitting: true });
+    this.setState({ cache: false, submitting: true });
 
     const { addMusic } = this.props;
     const {
